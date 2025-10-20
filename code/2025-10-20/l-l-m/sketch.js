@@ -1,11 +1,10 @@
 function setup() {
   createCanvas(windowWidth, windowHeight);
-
+  // Remove noLoop() so it animates
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  redraw(); // Redraw once when window resizes
 }
 
 function drawDotCloud(lineX) {
@@ -31,6 +30,10 @@ function drawDotCloud(lineX) {
 
 
 function drawFadingLine(x) {
+  // Calculate repulsion from mouse
+  let repulsion = calculateRepulsion(x);
+  let displacedX = x + repulsion;
+  
   // Draw line as many thin vertical strips with varying alpha
   let strips = 100;
   let lineThickness = windowWidth/10;
@@ -40,7 +43,7 @@ function drawFadingLine(x) {
   // Draw the fading red line first
   for (let i = 0; i < strips; i++) {
     let offsetX = map(i, 0, strips, -lineThickness/2, lineThickness/2);
-    let stripX = x + offsetX;
+    let stripX = displacedX + offsetX;
     
     // Calculate distance from center of line (horizontally)
     let distFromCenter = abs(offsetX);
@@ -59,7 +62,7 @@ function drawFadingLine(x) {
   
   // Now draw dots on top, denser at center point
   let numDots = 800; // total dots per line
-  let centerX = x;
+  let centerX = displacedX; // Use displaced position
   let centerY = height / 2; // y = windowHeight/2
   
   for (let i = 0; i < numDots; i++) {
@@ -87,6 +90,30 @@ function drawFadingLine(x) {
   }
 }
 
+function calculateRepulsion(lineX) {
+  // Distance from mouse to line (horizontal only)
+  let distToMouse = mouseX - lineX;
+  let absDist = abs(distToMouse);
+  
+  // Influence radius - how far the mouse affects the line
+  let influenceRadius = 200;
+  
+  // If mouse is too far, no repulsion
+  if (absDist > influenceRadius) {
+    return 0;
+  }
+  
+  // Calculate repulsion force (inverse square falloff)
+  let force = map(absDist, 0, influenceRadius, 40, 0);
+  
+  // Push away from mouse
+  if (distToMouse > 0) {
+    return -force; // Mouse is to the right, push left
+  } else {
+    return force;  // Mouse is to the left, push right
+  }
+}
+
 function drawRecursiveLines(x) {
   // Base case: stop when we reach the right edge
   if (x > width) {
@@ -96,7 +123,7 @@ function drawRecursiveLines(x) {
   // Draw the fading line
   drawFadingLine(x);
   
-  // RECURSIVE, important otherwise only one!
+  // RECURSIVE
   drawRecursiveLines(x + 200);
 }
 
