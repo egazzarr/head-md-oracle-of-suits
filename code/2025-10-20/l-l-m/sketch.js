@@ -1,31 +1,12 @@
 function setup() {
   createCanvas(windowWidth, windowHeight);
   // Remove noLoop() so it animates
+  textAlign(CENTER, CENTER);
+  textFont('Courier New');
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-}
-
-function drawDotCloud(lineX) {
-  noStroke();
-  
-  // Number of dots per line
-  let numDots = 300;
-  
-  for (let i = 0; i < numDots; i++) {
-    // Random y position anywhere on screen
-    let y = random(height);
-    
-    // Random horizontal offset from line (scattered around it)
-    let offsetX = random(-50, 50); // 50 pixels left or right of line
-    let x = lineX + offsetX;
-    // Red color
-    fill(255, 0, 0);
-    
-    // Draw tiny dot
-    ellipse(x, y, 6, 2);
-  }
 }
 
 
@@ -36,7 +17,7 @@ function drawFadingLine(x) {
   
   // Draw line as many thin vertical strips with varying alpha
   let strips = 100;
-  let lineThickness = windowWidth/10;
+  let lineThickness = windowWidth/7;
   
   noStroke(); // otherwise all black
   
@@ -60,32 +41,56 @@ function drawFadingLine(x) {
     rect(stripX, 0, stripWidth, height);
   }
   
-  // Now draw dots on top, denser at center point
-  let numDots = 800; // total dots per line
-  let centerX = displacedX; // Use displaced position
-  let centerY = height / 2; // y = windowHeight/2
+  // RANDOM GAUSSIAN-LIKE DISTRIBUTION: Stationary dots that follow mouse when close
+  let numDots = 2500;
+  let centerX = displacedX;
+  let centerY = height / 2;
+  
+  // Fix random seed so dots stay in same base positions
+  randomSeed(x * 1000);
   
   for (let i = 0; i < numDots; i++) {
-    // Random position within line area
-    let offsetX = randomGaussian(0, lineThickness/4); // Gaussian distribution around center
-    let dotX = centerX + offsetX;
+    // Use Box-Muller transform for Gaussian-like distribution with random()
+    // Generate base position (stationary)
+    let u1 = random();
+    let u2 = random();
+    let gaussianX = sqrt(-2 * log(u1)) * cos(TWO_PI * u2);
+    let gaussianY = sqrt(-2 * log(random())) * cos(TWO_PI * random());
     
-    let offsetY = randomGaussian(0, height/4); // Gaussian distribution around vertical center
-    let dotY = centerY + offsetY;
+    let baseOffsetX = gaussianX * lineThickness/4;
+    let baseOffsetY = gaussianY * height/4;
     
-    // Calculate distance from center point (centerX, centerY)
-    let distFromCenterPoint = dist(dotX, dotY, centerX, centerY);
+    let baseDotX = centerX + baseOffsetX;
+    let baseDotY = centerY + baseOffsetY;
+    
+    // Start with base position
+    let dotX = baseDotX;
+    let dotY = baseDotY;
+    
+    // Calculate distance to mouse
+    let distToMouse = dist(baseDotX, baseDotY, mouseX, mouseY);
+    let attractionRadius = 200;
+    
+    if (distToMouse < attractionRadius) {
+      // Move dot toward mouse based on distance
+      let attractionStrength = map(distToMouse, 0, attractionRadius, 1, 0);
+      dotX = lerp(baseDotX, mouseX, attractionStrength);
+      dotY = lerp(baseDotY, mouseY, attractionStrength);
+    }
+    
+    // Calculate distance from center point for density
+    let distFromCenterPoint = dist(baseDotX, baseDotY, centerX, centerY);
     let maxDistForDots = max(lineThickness/2, height/2);
     
-    // Density falls off with distance - skip some dots based on distance
+    // Density falls off with distance - denser at center
     let densityFactor = map(distFromCenterPoint, 0, maxDistForDots, 1, 0.1);
-    if (random() > densityFactor) continue; // Skip this dot based on density
+    if (random() > densityFactor) continue;
     
-    // Dot alpha also fades with distance
+    // Dot alpha fades with distance
     let dotAlpha = map(distFromCenterPoint, 0, maxDistForDots, 180, 20);
     
-    // Grey dots
-    fill(255,0,255, dotAlpha);
+    // Pink/magenta dots
+    fill(255, 0, 255, dotAlpha);
     ellipse(dotX, dotY, 3, 7);
   }
 }
@@ -130,4 +135,10 @@ function drawRecursiveLines(x) {
 function draw() {
   background(255);
   drawRecursiveLines(100);
+    push();
+  fill(250,250,250);
+  textSize(17);
+  textStyle(BOLD);
+  text("CATCH THE CENTRE OF THE LINES", width/2, height/2);
+  pop();
 }
