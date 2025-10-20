@@ -1,6 +1,6 @@
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  noLoop(); // Draw once and stop
+
 }
 
 function windowResized() {
@@ -96,7 +96,7 @@ function drawRecursiveLines(x) {
   // Draw the fading line
   drawFadingLine(x);
   
-  // RECURSIVE
+  // RECURSIVE, important otherwise only one!
   drawRecursiveLines(x + 200);
 }
 
