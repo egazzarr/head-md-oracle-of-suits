@@ -24,6 +24,13 @@ function draw() {
   // remove dead ripples
   ripples = ripples.filter(ripple => ripple.alive);
 
+  //add mouseX and mouseY position text in top left corner changing dynamically
+  fill(100);
+  noStroke();
+  textSize(14);
+  textFont('Courier New');
+  text(mouseX + ", " + mouseY, 10, 20); 
+
 }
 
 function mousePressed() {
