@@ -134,11 +134,14 @@ function drawRecursiveLines(x) {
 
 function draw() {
   background(255);
-  drawRecursiveLines(100);
-    push();
-  fill(250,250,250);
+  drawRecursiveLines(200);
+  push();
+  fill(250,0,0);
   textSize(17);
+
   textStyle(BOLD);
-  text("CATCH THE CENTRE OF THE LINES", width/2, height/2);
+  translate(100, height/2);
+  rotate(PI+PI/2);
+  text("CATCH THE CENTRE OF THE LINES", 0, 0);
   pop();
 }
