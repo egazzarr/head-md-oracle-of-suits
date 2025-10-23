@@ -192,19 +192,21 @@ function draw4() {
   pop();
 }
 
-// create a text box for a title in the middle of the screen
+//function to write text in the centre in front of grid
 function drawTitle() {
   push();
-  translate(0, 0, 100);
-  fill(0);
-  textSize(48);
+  translate(0, 0, 200);
+  rotateY(-rotationY);
   textAlign(CENTER, CENTER);
-  textFont('Courier New');
-  text("HI", 0, 0);
+  textSize(32);
+  fill(0);
+  noStroke();
+  text("Interactive Biological Blobs", 0, 0);
   pop();
 }
 
-function drawgrid() { 
+//function to draw grid on the ground plane
+function drawgrid() {
   push();
   stroke(100);
   strokeWeight(1);
