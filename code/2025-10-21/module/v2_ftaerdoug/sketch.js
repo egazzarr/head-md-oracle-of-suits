@@ -27,7 +27,7 @@ function draw() {
   //add mouseX and mouseY position text in top left corner changing dynamically
   fill(100);
   noStroke();
-  textSize(14);
+  textSize(18);
   textFont('Courier New');
   text(mouseX + ", " + mouseY, 10, 20); 
 

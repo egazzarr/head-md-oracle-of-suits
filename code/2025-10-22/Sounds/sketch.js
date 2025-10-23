@@ -1,30 +1,42 @@
 // move your mouse in the window to change audiovisuals
+let audioStarted = false;
+
 function setup() {
   createCanvas( windowWidth, windowHeight )
 
-    // initialize MediaPipe settings
+  // initialize MediaPipe settings
   setupHands();
   // start camera using MediaPipeHands.js helper
   setupVideo();
 
-  drums = EDrums( 'x*o*x*o-' )
-
-  sampler = Sampler().record( drums, 1 )
-    .note.seq( [.25,.5,1,2].rnd(), [1/4,1/8,1/2].rnd() )
-    .fx.add( Delay(1/64))
-    .pan.seq( Rndf(-1,1) )
-
-  bass = Mono('bass')
-    .note.seq( [0,7], 1/8 )
-
-  Gibber.scale.root.seq( ['c4','eb4'], 1 )
-
-  // follow Gibber's Master bus output
-  follow = Follow( Gibber.Master, 1024 )
-
   background( 64 )
   noFill()
   stroke( 10,0,0,127 )
+}
+
+// Click to start audio
+function mousePressed() {
+  if (!audioStarted) {
+    userStartAudio();
+    
+    drums = EDrums( 'x*o*x*o-' )
+
+    sampler = Sampler().record( drums, 1 )
+      .note.seq( [.25,.5,1,2].rnd(), [1/4,1/8,1/2].rnd() )
+      .fx.add( Delay(1/64))
+      .pan.seq( Rndf(-1,1) )
+
+    bass = Mono('bass')
+      .note.seq( [0,7], 1/8 )
+
+    Gibber.scale.root.seq( ['c4','eb4'], 1 )
+
+    // follow Gibber's Master bus output
+    follow = Follow( Gibber.Master, 1024 )
+    
+    audioStarted = true;
+    console.log('Audio started!');
+  }
 }
 
 
@@ -46,15 +58,10 @@ function draw() {
 
   sampler.fx[0].feedback = x < .99 ? x : .99
 
-  strokeWeight( value * 50 )
-  background( 64,64,64,10 )
+  strokeWeight( value * 5 )
+  background( 0,10,255,10 )
   ellipse( ww2, wh2, radius, radius )
 
-
-
-
-  // clear the canvas
-  background(255);
 
   // if the video connection is ready
   if (isVideoReady()) {
@@ -80,7 +87,6 @@ function draw() {
 
   }
   }
-
 
 
 
