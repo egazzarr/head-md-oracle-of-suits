@@ -12,12 +12,12 @@
   let q2Synth, q2Seq;
   let isQ2Playing = false;
   
-  // Q3: Kick drum with sequencer - rhythmic
-  let q3Kick, q3Seq;
+  // Q3: PolyFM with reverb and chorus (cups)
+  let q3Fm, q3Verb, q3Chorus, q3LastYear = null;
   let isQ3Playing = false;
   
-  // Q4: PolyFM with reverb and chorus
-  let q4Fm, q4Verb, q4Chorus, q4LastYear = null;
+  // Q4: Kick drum with sequencer - rhythmic (clubs)
+  let q4Kick, q4Seq;
   let isQ4Playing = false;
 
   const yearFreqs = {
@@ -160,69 +160,20 @@
 
   window.isQ2Playing = () => isQ2Playing;
 
-  // ============ Q3: KICK DRUM + SEQUENCER - Rhythmic ============
+  // ============ Q3: PolyFM with Reverb & Chorus - Long sustain chord (cups) ============
   window.playQ3 = function() {
     console.log('playQ3() called');
     if (!ready || isQ3Playing) return;
     
-    q3Kick = Kick({ gain: .8 }).connect();
-    q3Seq = Sequencer({ 
-      target: q3Kick, 
-      key: 'note', 
-      values: [120], 
-      timings: [22050] 
-    }).start();
-    
-    isQ3Playing = true;
-  };
-
-  window.updateQ3Sequence = function(values, timings) {
-    if (!ready || !isQ3Playing || !q3Seq) return;
-    if (values) q3Seq.values = values;
-    if (timings) q3Seq.timings = timings;
-  };
-
-  window.modulateQ3ByCircles = function(year) {
-    if (!ready || !isQ3Playing || !q3Seq) return;
-    // Modulate sequence based on year position
-    const yearIndex = [1100, 1200, 1300, 1400, 1500, 1600, 1700].indexOf(year);
-    if (yearIndex !== -1) {
-      // Add more frequencies as we go further out
-      const freqs = [120];
-      for (let i = 0; i <= yearIndex; i++) {
-        freqs.push(120 * (i + 1));
-      }
-      q3Seq.values = freqs;
-      // Get faster as we go out
-      q3Seq.timings = [22050 / (yearIndex + 1)];
-    }
-  };
-
-  window.stopQ3 = function() {
-    console.log('stopQ3() called');
-    if (q3Seq) q3Seq.stop();
-    if (q3Kick) q3Kick.disconnect();
-    q3Kick = null;
-    q3Seq = null;
-    isQ3Playing = false;
-  };
-
-  window.isQ3Playing = () => isQ3Playing;
-
-  // ============ Q4: PolyFM with Reverb & Chorus - Long sustain chord ============
-  window.playQ4 = function() {
-    console.log('playQ4() called');
-    if (!ready || isQ4Playing) return;
-    
     // Create effects chain: PolyFM -> Chorus -> Freeverb -> output
-    q4Verb = Freeverb({ 
+    q3Verb = Freeverb({ 
       roomSize: .95, 
       damping: .15 
     }).connect();
     
-    q4Chorus = Chorus().connect(q4Verb);
+    q3Chorus = Chorus().connect(q3Verb);
     
-    q4Fm = PolyFM({ 
+    q3Fm = PolyFM({ 
       gain: .8,
       cmRatio: 1.01,
       index: 1.2,
@@ -231,31 +182,80 @@
       attack: 44100 * 32,
       decay: 44100 * 32,
       feedback: .1,
-    }).connect(q4Chorus);
+    }).connect(q3Chorus);
 
     // Play chord
-    q4Fm.chord([110, 220, 330, 440]);
+    q3Fm.chord([110, 220, 330, 440]);
+    isQ3Playing = true;
+  };
+
+  window.updateQ3Note = function(year) {
+    // Q3 stays constant - no year-based changes
+  };
+
+  window.fadeOutQ3 = function(duration = 800) {
+    // Not used - instant cut instead
+  };
+
+  window.stopQ3 = function() {
+    console.log('stopQ3() called');
+    if (q3Fm) q3Fm.disconnect();
+    if (q3Chorus) q3Chorus.disconnect();
+    if (q3Verb) q3Verb.disconnect();
+    q3Fm = null;
+    q3Verb = null;
+    q3Chorus = null;
+    isQ3Playing = false;
+    q3LastYear = null;
+  };
+
+  window.isQ3Playing = () => isQ3Playing;
+
+  // ============ Q4: KICK DRUM + SEQUENCER - Rhythmic (clubs) ============
+  window.playQ4 = function() {
+    console.log('playQ4() called');
+    if (!ready || isQ4Playing) return;
+    
+    q4Kick = Kick({ gain: .8 }).connect();
+    q4Seq = Sequencer({ 
+      target: q4Kick, 
+      key: 'note', 
+      values: [120], 
+      timings: [22050] 
+    }).start();
+    
     isQ4Playing = true;
   };
 
-  window.updateQ4Note = function(year) {
-    // Q4 stays constant - no year-based changes
+  window.updateQ4Sequence = function(values, timings) {
+    if (!ready || !isQ4Playing || !q4Seq) return;
+    if (values) q4Seq.values = values;
+    if (timings) q4Seq.timings = timings;
   };
 
-  window.fadeOutQ4 = function(duration = 800) {
-    // Not used - instant cut instead
+  window.modulateQ4ByCircles = function(year) {
+    if (!ready || !isQ4Playing || !q4Seq) return;
+    // Modulate sequence based on year position
+    const yearIndex = [1100, 1200, 1300, 1400, 1500, 1600, 1700].indexOf(year);
+    if (yearIndex !== -1) {
+      // Add more frequencies as we go further out
+      const freqs = [120];
+      for (let i = 0; i <= yearIndex; i++) {
+        freqs.push(120 * (i + 1));
+      }
+      q4Seq.values = freqs;
+      // Get faster as we go out
+      q4Seq.timings = [22050 / (yearIndex + 1)];
+    }
   };
 
   window.stopQ4 = function() {
     console.log('stopQ4() called');
-    if (q4Fm) q4Fm.disconnect();
-    if (q4Chorus) q4Chorus.disconnect();
-    if (q4Verb) q4Verb.disconnect();
-    q4Fm = null;
-    q4Verb = null;
-    q4Chorus = null;
+    if (q4Seq) q4Seq.stop();
+    if (q4Kick) q4Kick.disconnect();
+    q4Kick = null;
+    q4Seq = null;
     isQ4Playing = false;
-    q4LastYear = null;
   };
 
   window.isQ4Playing = () => isQ4Playing;

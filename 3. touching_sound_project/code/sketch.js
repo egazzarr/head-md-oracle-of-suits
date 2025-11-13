@@ -5,6 +5,10 @@ let diameterRatio = 0.8; // ratio of height used for diameter (persistent)
 
 let bgImg;
 
+// Mode: 0 = video, 1 = symbols mode, 3 = interactive
+let currentMode = 0;
+let symbolsStartTime = 0;
+
 // Hand detection globals
 let leftHandDetected = false;
 let rightHandDetected = false;
@@ -57,11 +61,12 @@ function setup() {
   setupHands();
   setupVideo();
 
-  // Load demo video with callback
-  demoVideo = createVideo('1.40min.mov', vidLoaded);
+  // Load video with callback
+  demoVideo = createVideo('../../../davin_visual.mov', vidLoaded);
   demoVideo.hide();
-  demoVideo.elt.muted = false; // Explicitly unmute
+  demoVideo.elt.muted = false;
   demoVideo.elt.volume = 1.0;
+  demoVideo.loop();
   console.log('Video loading...');
 }
 
@@ -78,6 +83,158 @@ function windowResized() {
 
 
 function draw() {
+  // Check for hand detection in any mode
+  let handInQuadrant = false;
+  if (detections && detections.multiHandLandmarks && detections.multiHandLandmarks.length > 0) {
+    for (let i = 0; i < detections.multiHandLandmarks.length; i++) {
+      let hand = detections.multiHandLandmarks[i];
+      let indexTip = hand[FINGER_TIPS.index];
+      
+      // Map camera coordinates to canvas coordinates
+      let fingerPos;
+      if (typeof mapCameraToCanvas === 'function') {
+        fingerPos = mapCameraToCanvas(indexTip.x, indexTip.y, width, height);
+      } else {
+        fingerPos = {
+          x: indexTip.x * width,
+          y: indexTip.y * height
+        };
+      }
+      
+      // Check if hand is in a quadrant
+      const quadrant = getQuadrant(fingerPos);
+      if (quadrant !== "None" && quadrant !== "Unknown") {
+        handInQuadrant = true;
+        break;
+      }
+    }
+  }
+  
+  // Auto-switch to symbols mode when hand detected in quadrant
+  if (currentMode === 0 && handInQuadrant) {
+    currentMode = 1;
+    if (demoVideo) {
+      demoVideo.volume(0.5);
+    }
+    symbolsStartTime = millis();
+    console.log('Hand detected in quadrant - switching to Mode 1: Symbols');
+  }
+  
+  // MODE 1: Symbols mode - show year 1700 symbols in quadrants
+  if (currentMode === 1) {
+    background(0);
+    
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = diameter / 2;
+    
+    // Calculate video dimensions
+    let videoAspect = demoVideo && demoVideo.loadedmetadata ? demoVideo.width / demoVideo.height : 16/9;
+    let drawHeight = height * 1.08;
+    let drawWidth = drawHeight * videoAspect;
+    let drawX = (width - drawWidth) / 2;
+    let drawY = (height - drawHeight) / 2;
+    
+    // Draw video at full opacity
+    if (demoVideo && demoVideo.loadedmetadata) {
+      push();
+      image(demoVideo, drawX, drawY, drawWidth, drawHeight);
+      pop();
+    }
+    
+    // Draw year 1700 symbols in each quadrant (large size)
+    const symbolSize = radius * 0.6;
+    const symbolOffset = radius * 0.5;
+    
+    // Q1: Diamonds (top-right)
+    if (symbolImages.diamonds && symbolImages.diamonds[1700]) {
+      let img = symbolImages.diamonds[1700];
+      if (Array.isArray(img)) img = img[0];
+      if (img) {
+        push();
+        imageMode(CENTER);
+        image(img, cx + symbolOffset, cy - symbolOffset, symbolSize, symbolSize);
+        pop();
+      }
+    }
+    
+    // Q2: Spades (top-left)
+    if (symbolImages.spades && symbolImages.spades[1700]) {
+      let img = symbolImages.spades[1700];
+      if (Array.isArray(img)) img = img[0];
+      if (img) {
+        push();
+        imageMode(CENTER);
+        image(img, cx - symbolOffset, cy - symbolOffset, symbolSize, symbolSize);
+        pop();
+      }
+    }
+    
+    // Q3: Hearts/Cups (bottom-left)
+    if (symbolImages.hearts && symbolImages.hearts[1700]) {
+      let img = symbolImages.hearts[1700];
+      if (Array.isArray(img)) img = img[0];
+      if (img) {
+        push();
+        imageMode(CENTER);
+        image(img, cx - symbolOffset, cy + symbolOffset, symbolSize, symbolSize);
+        pop();
+      }
+    }
+    
+    // Q4: Clubs (bottom-right)
+    if (symbolImages.clubs && symbolImages.clubs[1700]) {
+      let img = symbolImages.clubs[1700];
+      if (Array.isArray(img)) img = img[0];
+      if (img) {
+        push();
+        imageMode(CENTER);
+        image(img, cx + symbolOffset, cy + symbolOffset, symbolSize, symbolSize);
+        pop();
+      }
+    }
+    
+    return; // Skip rest of draw
+  }
+  
+  // MODE 0: Video mode
+  if (currentMode === 0) {
+    background(0);
+    
+    if (demoVideo && demoVideo.loadedmetadata) {
+      push();
+      // Fit to height + 8%, maintain aspect ratio
+      let videoAspect = demoVideo.width / demoVideo.height;
+      let drawHeight = height * 1.08;
+      let drawWidth = drawHeight * videoAspect;
+      let drawX = (width - drawWidth) / 2;
+      let drawY = (height - drawHeight) / 2;
+      
+      image(demoVideo, drawX, drawY, drawWidth, drawHeight);
+      pop();
+      
+      // Draw "TOUCHING SOUNDS" text
+      push();
+      fill(255);
+      noStroke();
+      textAlign(CENTER, CENTER);
+      textSize(60);
+      textStyle(BOLD);
+      text('TOUCHING\nSOUNDS', width / 2, height / 2);
+      pop();
+    }
+    
+    return; // Skip rest of draw
+  }
+  
+  // MODE 3: Interactive mode
+  // Ensure audio is initialized
+  if (typeof Gibberish !== 'undefined' && !Gibberish.ctx && typeof userStartAudio === 'function') {
+    userStartAudio().then(() => {
+      if (!Gibberish.ctx) Gibberish.init();
+    }).catch(e => console.log('Audio init:', e));
+  }
+  
   if (calibrationMode) {
     background(255); // white background in calibration mode
   } else {
@@ -111,66 +268,6 @@ function draw() {
 
   // Always draw the circle overlay
   drawCircleWithNumbers();
-
-  // Video overlay - play full video length with 0.5 transparency
-  if (!calibrationMode) {
-    if (!videoPlaying) {
-      demoVideo.elt.muted = false; // Ensure not muted
-      demoVideo.volume(1.0); // Ensure volume is on
-      demoVideo.play();
-      videoStartTime = millis();
-      videoPlaying = true;
-      console.log('Video playing with sound, muted:', demoVideo.elt.muted, 'volume:', demoVideo.elt.volume);
-    }
-    
-    // Check if video is still playing
-    if (videoPlaying && demoVideo.time() < demoVideo.duration()) {
-      push();
-      
-      
-      // Calculate dimensions to maintain aspect ratio
-      let videoAspect = demoVideo.width / demoVideo.height;
-      let canvasAspect = width / height;
-      let drawWidth, drawHeight, drawX, drawY;
-      
-      if (canvasAspect > videoAspect) {
-        // Canvas is wider - fit to height
-        drawHeight = height;
-        drawWidth = height * videoAspect;
-        drawX = (width - drawWidth) / 2;
-        drawY = 0;
-      } else {
-        // Canvas is taller - fit to width
-        drawWidth = width;
-        drawHeight = width / videoAspect;
-        drawX = 0;
-        drawY = (height - drawHeight) / 2;
-      }
-      
-      image(demoVideo, drawX, drawY, drawWidth, drawHeight);
-      pop();
-      
-      // Draw "TOUCHING SOUNDS" text
-      push();
-      fill(255); // white
-      noStroke();
-      textAlign(CENTER, CENTER+BASELINE);
-      textSize(60);
-      textStyle(BOLD);
-      text('TOUCHING\nSOUNDS', width / 2, height / 2);
-      pop();
-      
-    } else if (videoPlaying && demoVideo.time() >= demoVideo.duration()) {
-      demoVideo.stop();
-      videoPlaying = false;
-    }
-  } else {
-    // Reset when entering calibration mode
-    if (videoPlaying) {
-      demoVideo.stop();
-      videoPlaying = false;
-    }
-  }
 
   strokeWeight(1);
 
@@ -237,23 +334,23 @@ function draw() {
           }
         }
 
-        // Q3: Kick drum with sequencer
+        // Q3: PolyFM - constant chord (cups)
         if (quadrant === "3") {
           currentlyInQ3 = true;
           if (window.isQ3Playing && !window.isQ3Playing()) {
             window.playQ3();
           }
-          if (window.modulateQ3ByCircles && window.getYearFromFingerPos) {
-            const year = window.getYearFromFingerPos(fingerPos);
-            if (year) window.modulateQ3ByCircles(year);
-          }
         }
 
-        // Q4: PolyFM - constant chord
+        // Q4: Kick drum with sequencer (clubs)
         if (quadrant === "4") {
           currentlyInQ4 = true;
           if (window.isQ4Playing && !window.isQ4Playing()) {
             window.playQ4();
+          }
+          if (window.modulateQ4ByCircles && window.getYearFromFingerPos) {
+            const year = window.getYearFromFingerPos(fingerPos);
+            if (year) window.modulateQ4ByCircles(year);
           }
         }
       }
@@ -349,14 +446,22 @@ function getQuadrant(fingerPos) {
 
   const cx = width / 2;
   const cy = height / 2;
+  const radius = diameter / 2;
 
   const dx = fingerPos.x - cx;
-  const dy = cy - fingerPos.y; // invert y because p5 y increases downwards
+  const dy = fingerPos.y - cy; // p5 y coordinate (not inverted here)
+  
+  // Check if finger is inside the circle
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance > radius) return "None";
 
-  if (dx >= 0 && dy >= 0) return "1"; // top-right
-  if (dx < 0 && dy >= 0) return "2";  // top-left
-  if (dx < 0 && dy < 0) return "3";   // bottom-left
-  if (dx >= 0 && dy < 0) return "4";  // bottom-right
+  // Invert dy for quadrant calculation (math coordinate system)
+  const dyInverted = -dy;
+
+  if (dx >= 0 && dyInverted >= 0) return "1"; // top-right
+  if (dx < 0 && dyInverted >= 0) return "2";  // top-left
+  if (dx < 0 && dyInverted < 0) return "3";   // bottom-left
+  if (dx >= 0 && dyInverted < 0) return "4";  // bottom-right
 
   return "Unknown";
 }
@@ -402,6 +507,14 @@ function drawCircleWithNumbers() {
     const r = map(i, 0, ringCount - 1, radius * 0.1, radius * 0.9);
     const yearText = years[i].toString();
     const offset = 15; // distance from circle line
+    
+    // Q2: Top-left quadrant (135° in screen coords = negative x, negative y from center)
+    push();
+    translate(cx - r * cos(PI/4), cy - r * sin(PI/4) - offset);
+    rotate(0); // horizontal, readable from left
+    textAlign(CENTER, BOTTOM);
+    text(yearText, 0, 0);
+    pop();
     
     // Q4: Bottom-right quadrant (315° in screen coords = positive x, positive y from center)
     push();
@@ -457,5 +570,19 @@ function drawQuadrantOverlay() {
       height - 20 - (lines.length - 1 - i) * 22 - pad / 2
     );
   }
+}
+
+// Keyboard controls for mode switching
+function keyPressed() {
+  if (key === '0') {
+    currentMode = 0;
+    if (demoVideo) demoVideo.play();
+    console.log('Mode 0: Video');
+  } else if (key === '3') {
+    currentMode = 3;
+    if (demoVideo) demoVideo.pause();
+    console.log('Mode 3: Interactive');
+  }
+  // C key for calibration is handled in MediaPipeHands.js
 }
 

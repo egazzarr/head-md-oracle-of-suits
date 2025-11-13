@@ -47,7 +47,7 @@ class SymbolParticle {
   constructor(x, y, img) {
     this.pos = createVector(x, y);
     this.vel = p5.Vector.random2D().mult(random(0.5, 2));
-    this.size = 60; // ≈ 1 cm visual scale
+    this.size = 80; // ≈ 1 cm visual scale
     this.birthTime = millis();
     this.fadeTime = 3000; // 2 seconds fade
     this.img = img;
@@ -81,7 +81,8 @@ function getYearFromPosition(fingerPos) {
   
   const cx = width / 2;
   const cy = height / 2;
-  const radius = (height * 4 / 5) / 2;
+  // Use the calibrated diameter from sketch.js instead of hardcoded value
+  const radius = (typeof diameter !== 'undefined' ? diameter : height * 0.8) / 2;
   
   // Calculate distance from center
   const dx = fingerPos.x - cx;
@@ -115,8 +116,8 @@ function getSuitFromQuadrant(quadrant) {
   switch(quadrant) {
     case "1": return "diamonds";
     case "2": return "spades";
-    case "3": return "clubs";
-    case "4": return "hearts";
+    case "3": return "hearts";  // cups
+    case "4": return "clubs";
     default: return null;
   }
 }
