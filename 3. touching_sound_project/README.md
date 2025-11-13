@@ -1,5 +1,7 @@
 # TOUCHING SOUNDS
 
+![](main_visual.png)
+
 Exploring the historical evolution of card suit symbolism throughout different eras and regions of the world, unveiling what hides behind the 4 French suit symbols by triggering material, atmospheric sounds. 
 
 ### Interaction
@@ -17,22 +19,22 @@ Spinning wheels +  sliding fingers on 3d surfaces.
 ### REFERENCES
 
 - [Jelly](https://pinaffo-pluvinage.com/Jelly-6) Pinaffo and Pluvinage
-![](jelly.png)
+![](images/jelly.png)
 
 - [The Sound of Touch](https://tangible.media.mit.edu/project/the-sound-of-touch/) David Merrill and Hayes Raffle, Roberto Aimi
-![](touching.png)
+![](images/touching.png)
 
 - [AR Sandbox at the Dubois Museum](https://uk.pinterest.com/pin/70437487698894/)
-![](sand.png)
+![](images/sand.png)
 
 - [Temporary Exhibition "World of sound"](https://explorer.technorama.ch/en/ausstellung/temporary-exhibition-world-of-sound)
-![](glass.png)
+![](images/glass.png)
 
 - [Musee de la main](https://www.museedelamain.ch/download/4hqftg.pdf/verdan-depliant-touch-accueil.pdf) Yuan Li
-![](projection.png)
+![](images/projection.png)
 
 - [Magnetic Wall, 2014](https://www.yaelerel.com/projects/magnetic-wall) YAEL EREL 
-![](magnets.png)
+![](images/magnets.png)
 
 - [Urban Lights Contacts (Annecy) - Scenocosme](https://www.youtube.com/watch?v=_97WWZO3QU0) Gregory Lasserre & Anais met den Ancxt
 
@@ -46,16 +48,16 @@ Spinning wheels +  sliding fingers on 3d surfaces.
 |:---------------------:|:-----------------:|:-----------------:|:-----------------:|
 
 - we managed to do color detection of the background image, and start generating visuals. 
-![](2025-10-28.gif)
+![](images/2025-10-28.gif)
 - we tested that the camera projections on the hand. 
 
-| ![](testhand1.jpeg) | ![](testhand2.jpeg) |
+| ![](images/testhand1.jpeg) | ![](images/testhand2.jpeg) |
 |:---------------------:|:-----------------:|
 
 ### 04 November
 
 - we tries to do a paper mache workshop, with air baloons stuck on a round surface. We realised it was going to be too messy and the layers would take days to dry out, so we went to the prototyper workshop and discussed materials with them. 
-![alt text](gold-1.jpeg)
+![alt text](images/gold-1.jpeg)
 
 There are 3 printing/engraving techniques, other than the 3D printing whihc would take too long:
 1. ZUND - only sharp edges, but goes deep
@@ -79,11 +81,11 @@ We need to do:
 ### 05 November
 
 Blender models shown to the CNC workshop. They say it will not work, therefore working in Fusion. 
-| ![](40cm_top.png) | ![](40cm.png) |
+| ![](images/40cm_top.png) | ![](images/40cm.png) |
 |:---------------------:|:-----------------:|
 
 Test version working in STL file on 3D printer for test day. 
-| ![](simple1.png) | ![](simple2.png) |
+| ![](images/simple1.png) | ![](images/simple2.png) |
 |:---------------------:|:-----------------:|
 
 
@@ -100,7 +102,7 @@ Test version working in STL file on 3D printer for test day.
 - generating videos to project on the surface for a better user journey. 
 - the 3D model is taking a lot of time. DISCLAIMER: spent the day with the CNC machine and the girl setting up my Fusion 3D model. We decided use the LAB material because they told us it was 4 CHF per metre squared. Turned out it was 500CHF per metre squared, quite a difference. So I cut my model in 9 parts and used the 3D printer to make it. 
 
-| ![](model_3d_2.png) | ![](model_3d_1.png) |![](model_3d.png) |
+| ![](images/model_3d_2.png) | ![](images/model_3d_1.png) |![](images/model_3d.png) |
 |:---------------------:|:-----------------:|:-----------------:|
 
 

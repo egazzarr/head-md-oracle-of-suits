@@ -23,6 +23,12 @@ let wasInQ2 = false;
 let wasInQ3 = false;
 let wasInQ4 = false;
 
+// Video overlay
+let demoVideo;
+let videoStartTime = 0;
+let videoPlaying = false;
+
+
 function preload() {
   preloadSymbols();
 
@@ -50,6 +56,18 @@ function setup() {
   // Initialize MediaPipe
   setupHands();
   setupVideo();
+
+  // Load demo video with callback
+  demoVideo = createVideo('1.40min.mov', vidLoaded);
+  demoVideo.hide();
+  demoVideo.elt.muted = false; // Explicitly unmute
+  demoVideo.elt.volume = 1.0;
+  console.log('Video loading...');
+}
+
+function vidLoaded() {
+  console.log('Video loaded successfully');
+  demoVideo.volume(1.0);
 }
 
 function windowResized() {
@@ -93,6 +111,66 @@ function draw() {
 
   // Always draw the circle overlay
   drawCircleWithNumbers();
+
+  // Video overlay - play full video length with 0.5 transparency
+  if (!calibrationMode) {
+    if (!videoPlaying) {
+      demoVideo.elt.muted = false; // Ensure not muted
+      demoVideo.volume(1.0); // Ensure volume is on
+      demoVideo.play();
+      videoStartTime = millis();
+      videoPlaying = true;
+      console.log('Video playing with sound, muted:', demoVideo.elt.muted, 'volume:', demoVideo.elt.volume);
+    }
+    
+    // Check if video is still playing
+    if (videoPlaying && demoVideo.time() < demoVideo.duration()) {
+      push();
+      
+      
+      // Calculate dimensions to maintain aspect ratio
+      let videoAspect = demoVideo.width / demoVideo.height;
+      let canvasAspect = width / height;
+      let drawWidth, drawHeight, drawX, drawY;
+      
+      if (canvasAspect > videoAspect) {
+        // Canvas is wider - fit to height
+        drawHeight = height;
+        drawWidth = height * videoAspect;
+        drawX = (width - drawWidth) / 2;
+        drawY = 0;
+      } else {
+        // Canvas is taller - fit to width
+        drawWidth = width;
+        drawHeight = width / videoAspect;
+        drawX = 0;
+        drawY = (height - drawHeight) / 2;
+      }
+      
+      image(demoVideo, drawX, drawY, drawWidth, drawHeight);
+      pop();
+      
+      // Draw "TOUCHING SOUNDS" text
+      push();
+      fill(255); // white
+      noStroke();
+      textAlign(CENTER, CENTER+BASELINE);
+      textSize(60);
+      textStyle(BOLD);
+      text('TOUCHING\nSOUNDS', width / 2, height / 2);
+      pop();
+      
+    } else if (videoPlaying && demoVideo.time() >= demoVideo.duration()) {
+      demoVideo.stop();
+      videoPlaying = false;
+    }
+  } else {
+    // Reset when entering calibration mode
+    if (videoPlaying) {
+      demoVideo.stop();
+      videoPlaying = false;
+    }
+  }
 
   strokeWeight(1);
 
@@ -194,23 +272,6 @@ function draw() {
     drawQuadrantOverlay();
   }
 
-/*   // --- Draw red indicator dot before hand is detected (Q3, 1200 ring) ---
-  if (!leftHandDetected && !rightHandDetected) {
-    const cx = width / 2;
-    const cy = height / 2;
-    const radius = (height * 4 / 5) / 2;
-    const r1200 = map(1, 0, 6, radius * 0.1, radius * 0.9); // 1200 is index 1
-    
-    // Q3: bottom-left (negative x, positive y from center in screen coords)
-    const offset = r1200 / sqrt(2); // 45 degree diagonal
-    const dotX = cx - offset; // left
-    const dotY = cy + offset; // bottom (screen Y increases downward)
-    
-    fill(255, 0, 0, 200); // red, alpha 0.5
-    noStroke();
-    ellipse(dotX, dotY, 30, 30);
-  } */
-
 
 
   // Stop sounds when finger leaves quadrants
@@ -262,15 +323,6 @@ if (rightIndexPos) {
   // --- Draw trail symbols (snake formation) ---
   updateAndDrawTrail();
 
-  // --- Overlay UI (outside the mask) ---
-  //write on top left corner
-  // fill(255);
-  // noStroke();
-  // textSize(14);
-  // textFont('Courier New');
-  // textAlign(LEFT, TOP);
-  // text(`TOUCH THE DOT\n\n\nDid you know that \nin the Mamluk empire, in 1200,\none of the symbols on playing cards \nwere polo sticks?`, 10, 10);
-  
   // --- Camera preview in top right corner ---
   if (calibrationMode && typeof getCameraPreview === 'function') {
     let preview = getCameraPreview();
@@ -341,10 +393,10 @@ function drawCircleWithNumbers() {
     ellipse(cx, cy, r * 2, r * 2);
   }
 
-  // Draw year labels only in Q4
+  // Draw year labels in all
   
   textSize(14);
-  textStyle(BOLD); // Make text thicker
+
   
   for (let i = 0; i < ringCount; i++) {
     const r = map(i, 0, ringCount - 1, radius * 0.1, radius * 0.9);
@@ -407,32 +459,3 @@ function drawQuadrantOverlay() {
   }
 }
 
-
-/* 
-function drawColorOverlay() {
-  const pad = 12;
-  const lines = [
-    `Left: ${leftHoverColor}`,
-    `Right: ${rightHoverColor}`
-  ];
-
-  textSize(18);
-  textAlign(RIGHT, BOTTOM);
-
-  let boxW = max(textWidth(lines[0]), textWidth(lines[1])) + pad * 2;
-  let boxH = lines.length * 22 + pad;
-
-  noStroke();
-  fill(0, 150);
-  rect(width - boxW - 20, height - boxH - 20, boxW, boxH, 8);
-
-  fill(255);
-  for (let i = 0; i < lines.length; i++) {
-    text(
-      lines[i],
-      width - 20 - pad / 2,
-      height - 20 - (lines.length - 1 - i) * 22 - pad / 2
-    );
-  }
-}
- */
