@@ -71,7 +71,7 @@ function setup() {
   setupVideo();
 
   // Load video with callback
-  demoVideo = createVideo('../../../davin_visual.mov', vidLoaded);
+  demoVideo = createVideo('../images/davin_visual.mov', vidLoaded);
   demoVideo.hide();
   demoVideo.elt.muted = false;
   demoVideo.elt.volume = 1.0;
