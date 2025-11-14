@@ -43,6 +43,9 @@
     }
   }
 
+  // Export initSound so it can be called programmatically
+  window.initSound = initSound;
+
   window.addEventListener('pointerdown', initSound, { once: true });
 
   // ============ Q1: MONOSYNTH - Sustained notes changing with years ============

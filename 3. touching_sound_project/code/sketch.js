@@ -389,16 +389,19 @@ function draw() {
     if (mode2GeneratedYears.length >= mode2YearsToGenerate.length) {
       const latestYear = mode2GeneratedYears[mode2GeneratedYears.length - 1];
       if (latestYear === 1100 && millis() - mode2LastGenerationTime > 2000) {
-        currentMode = 3;
-        // Initialize Gibberish asynchronously
-        if (typeof Gibberish !== 'undefined' && !Gibberish.ctx) {
-          Gibberish.init().then(() => {
-            console.log('Gibberish initialized for Mode 3');
+        // Initialize Gibberish before switching modes
+        if (window.initSound && typeof window.initSound === 'function') {
+          window.initSound().then(() => {
+            console.log('Gibberish initialized, switching to Mode 3');
+            currentMode = 3;
           }).catch(e => {
-            console.warn('Gibberish init error:', e);
+            console.warn('Gibberish init error, switching to Mode 3 anyway:', e);
+            currentMode = 3;
           });
+        } else {
+          console.log('Auto-switching to Mode 3: Interactive');
+          currentMode = 3;
         }
-        console.log('Auto-switching to Mode 3: Interactive');
       }
     }
     
@@ -471,19 +474,10 @@ function draw() {
   }
   
   // MODE 3: Interactive mode
-  // Stop video and ensure audio is initialized on first frame of Mode 3
+  // Stop video on first frame of Mode 3
   if (demoVideo && demoVideo.elt && !demoVideo.elt.paused) {
     demoVideo.pause();
     console.log('Video paused for interactive mode');
-  }
-  
-  // Initialize Gibberish asynchronously if not already initialized
-  if (typeof Gibberish !== 'undefined' && !Gibberish.ctx) {
-    Gibberish.init().then(() => {
-      console.log('Gibberish initialized in Mode 3');
-    }).catch(e => {
-      console.warn('Gibberish init error:', e);
-    });
   }
   
   if (calibrationMode) {
