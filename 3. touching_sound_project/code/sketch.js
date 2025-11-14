@@ -5,9 +5,18 @@ let diameterRatio = 0.8; // ratio of height used for diameter (persistent)
 
 let bgImg;
 
-// Mode: 0 = video, 1 = symbols mode, 3 = interactive
+// Mode: 0 = video, 1 = symbols mode, 2 = evolution mode, 3 = interactive
 let currentMode = 0;
 let symbolsStartTime = 0;
+
+// Mode 2 variables - now handles all 4 quadrants
+let mode2StartTime = 0;
+let mode2TransitionDuration = 4000; // 4 seconds for symbol resize/placement (doubled)
+let mode2GenerationDelay = 2000; // 2 seconds between each year generation (doubled)
+let mode2YearsToGenerate = [1700, 1600, 1500, 1400, 1300, 1200, 1100]; // Generate inwards
+let mode2GeneratedYears = [];
+let mode2LastGenerationTime = 0;
+let mode2CurrentCountry = '';
 
 // Hand detection globals
 let leftHandDetected = false;
@@ -120,6 +129,15 @@ function draw() {
     console.log('Hand detected in quadrant - switching to Mode 1: Symbols');
   }
   
+  // Auto-switch from Mode 1 to Mode 2 after 3 seconds
+  if (currentMode === 1 && millis() - symbolsStartTime > 3000) {
+    currentMode = 2;
+    mode2StartTime = millis();
+    mode2GeneratedYears = [];
+    mode2LastGenerationTime = millis();
+    console.log('Switching to Mode 2: Evolution All Quadrants');
+  }
+  
   // MODE 1: Symbols mode - show year 1700 symbols in quadrants
   if (currentMode === 1) {
     background(0);
@@ -131,7 +149,7 @@ function draw() {
     // Calculate video dimensions
     let videoAspect = demoVideo && demoVideo.loadedmetadata ? demoVideo.width / demoVideo.height : 16/9;
     let drawHeight = height * 1.08;
-    let drawWidth = drawHeight * videoAspect;
+    let drawWidth = drawHeight * videoAspect * 0.95; // Reduce horizontal stretch by 5%
     let drawX = (width - drawWidth) / 2;
     let drawY = (height - drawHeight) / 2;
     
@@ -197,6 +215,231 @@ function draw() {
     return; // Skip rest of draw
   }
   
+  // MODE 2: Evolution mode - progressive symbol generation for all quadrants
+  if (currentMode === 2) {
+    background(0); // black background
+    
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = diameter / 2;
+    const elapsed = millis() - mode2StartTime;
+    
+    // Draw white circle background
+    push();
+    fill(255);
+    noStroke();
+    ellipse(cx, cy, diameter, diameter);
+    pop();
+    
+    // Calculate video dimensions
+    let videoAspect = demoVideo && demoVideo.loadedmetadata ? demoVideo.width / demoVideo.height : 16/9;
+    let drawHeight = height * 1.08;
+    let drawWidth = drawHeight * videoAspect * 0.95;
+    let drawX = (width - drawWidth) / 2;
+    let drawY = (height - drawHeight) / 2;
+    
+    // Draw video with smooth fade out over 4 seconds, clipped to circle
+    if (demoVideo && demoVideo.loadedmetadata) {
+      push();
+      
+      // Calculate video fade out (fade over first 4 seconds)
+      const fadeOutDuration = 4000;
+      const videoAlpha = map(elapsed, 0, fadeOutDuration, 255, 0, true);
+      
+      // Clip video to circle
+      drawingContext.save();
+      drawingContext.beginPath();
+      drawingContext.arc(cx, cy, radius, 0, TWO_PI);
+      drawingContext.clip();
+      
+      tint(255, videoAlpha);
+      image(demoVideo, drawX, drawY, drawWidth, drawHeight);
+      drawingContext.restore();
+      pop();
+    }
+    
+    // Progressive symbol generation
+    const transitionProgress = constrain(elapsed / mode2TransitionDuration, 0, 1);
+    const easeProgress = easeInOutCubic(transitionProgress);
+    
+    // Country names mapping
+    const countryNames = {
+      1700: 'FRANCE',
+      1600: 'JAPAN',
+      1500: 'PORTUGAL',
+      1400: 'ITALY',
+      1300: 'SPAIN',
+      1200: 'EGYPT',
+      1100: 'CHINA'
+    };
+    
+    // Generate 1700 first during transition, then generate remaining years inward
+    if (elapsed <= mode2TransitionDuration) {
+      // First year (1700) is being animated
+      if (mode2GeneratedYears.length === 0) {
+        mode2GeneratedYears.push(1700);
+        mode2CurrentCountry = countryNames[1700];
+        mode2LastGenerationTime = millis();
+      }
+    } else if (mode2GeneratedYears.length < mode2YearsToGenerate.length &&
+               millis() - mode2LastGenerationTime > mode2GenerationDelay) {
+      // Generate subsequent years (1600, 1500, ... 1100) going inward
+      const nextYear = mode2YearsToGenerate[mode2GeneratedYears.length];
+      mode2GeneratedYears.push(nextYear);
+      mode2CurrentCountry = countryNames[nextYear];
+      mode2LastGenerationTime = millis();
+      console.log('Generated year:', nextYear, '-', mode2CurrentCountry);
+    }
+    
+    // Draw all generated symbols in all 4 quadrants
+    for (let year of mode2GeneratedYears) {
+      const yearIndex = mode2GeneratedYears.indexOf(year);
+      const isFirstYear = yearIndex === 0; // 1700
+      
+      // Calculate ring radius for this year (1700 = outermost, 1100 = innermost)
+      const ringCount = 7;
+      const yearRingIndex = (year - 1100) / 100;
+      const r = map(yearRingIndex, 0, ringCount - 1, radius * 0.1, radius * 0.9);
+      
+      // Final positions at 45°, 135°, 225°, 315° on the year ring
+      const diamondFinalX = cx + r * cos(-PI/4);     // Q1: 45°
+      const diamondFinalY = cy + r * sin(-PI/4);
+      const spadeFinalX = cx + r * cos(-PI * 3/4);   // Q2: 135°
+      const spadeFinalY = cy + r * sin(-PI * 3/4);
+      const heartFinalX = cx + r * cos(-PI * 5/4);   // Q3: 225°
+      const heartFinalY = cy + r * sin(-PI * 5/4);
+      const clubFinalX = cx + r * cos(-PI * 7/4);    // Q4: 315°
+      const clubFinalY = cy + r * sin(-PI * 7/4);
+      
+      // Symbol size and position animation for first year only
+      let symbolSize = 80;
+      let diamondX = diamondFinalX, diamondY = diamondFinalY;
+      let spadeX = spadeFinalX, spadeY = spadeFinalY;
+      let heartX = heartFinalX, heartY = heartFinalY;
+      let clubX = clubFinalX, clubY = clubFinalY;
+      
+      if (isFirstYear) {
+        // Animate from large to small with smoother easing
+        const startSize = radius * 0.6;
+        symbolSize = lerp(startSize, 80, easeProgress);
+        
+        // Start from quadrant offset positions
+        const offset = radius * 0.5;
+        
+        diamondX = lerp(cx + offset, diamondFinalX, easeProgress);
+        diamondY = lerp(cy - offset, diamondFinalY, easeProgress);
+        spadeX = lerp(cx - offset, spadeFinalX, easeProgress);
+        spadeY = lerp(cy - offset, spadeFinalY, easeProgress);
+        heartX = lerp(cx - offset, heartFinalX, easeProgress);
+        heartY = lerp(cy + offset, heartFinalY, easeProgress);
+        clubX = lerp(cx + offset, clubFinalX, easeProgress);
+        clubY = lerp(cy + offset, clubFinalY, easeProgress);
+      }
+      
+      // Q1: Diamonds (top-right)
+      if (symbolImages.diamonds && symbolImages.diamonds[year]) {
+        let img = symbolImages.diamonds[year];
+        if (Array.isArray(img)) img = img[0];
+        if (img) {
+          push();
+          imageMode(CENTER);
+          image(img, diamondX, diamondY, symbolSize, symbolSize);
+          pop();
+        }
+      }
+      
+      // Q2: Spades (top-left)
+      if (symbolImages.spades && symbolImages.spades[year]) {
+        let img = symbolImages.spades[year];
+        if (Array.isArray(img)) img = img[0];
+        if (img) {
+          push();
+          imageMode(CENTER);
+          image(img, spadeX, spadeY, symbolSize, symbolSize);
+          pop();
+        }
+      }
+      
+      // Q3: Hearts (bottom-left)
+      if (symbolImages.hearts && symbolImages.hearts[year]) {
+        let img = symbolImages.hearts[year];
+        if (Array.isArray(img)) img = img[0];
+        if (img) {
+          push();
+          imageMode(CENTER);
+          image(img, heartX, heartY, symbolSize, symbolSize);
+          pop();
+        }
+      }
+      
+      // Q4: Clubs (bottom-right)
+      if (symbolImages.clubs && symbolImages.clubs[year]) {
+        let img = symbolImages.clubs[year];
+        if (Array.isArray(img)) img = img[0];
+        if (img) {
+          push();
+          imageMode(CENTER);
+          image(img, clubX, clubY, symbolSize, symbolSize);
+          pop();
+        }
+      }
+    }
+    
+    // Auto-transition to Mode 3 after china (1100) is shown for 2 seconds
+    if (mode2GeneratedYears.length >= mode2YearsToGenerate.length) {
+      const latestYear = mode2GeneratedYears[mode2GeneratedYears.length - 1];
+      if (latestYear === 1100 && millis() - mode2LastGenerationTime > 2000) {
+        currentMode = 3;
+        // Initialize Gibberish asynchronously
+        if (typeof Gibberish !== 'undefined' && !Gibberish.ctx) {
+          Gibberish.init().then(() => {
+            console.log('Gibberish initialized for Mode 3');
+          }).catch(e => {
+            console.warn('Gibberish init error:', e);
+          });
+        }
+        console.log('Auto-switching to Mode 3: Interactive');
+      }
+    }
+    
+    // Draw country name in center (bold black like title) with overlap avoidance and fade out
+    if (mode2CurrentCountry && millis() - mode2LastGenerationTime < 3000) {
+      const latestYear = mode2GeneratedYears[mode2GeneratedYears.length - 1];
+      const timeSinceGeneration = millis() - mode2LastGenerationTime;
+      
+      // Fade out after 2 seconds (fade over 1 second)
+      const fadeStartTime = 2000;
+      const fadeDuration = 1000;
+      let textAlpha = 255;
+      if (timeSinceGeneration > fadeStartTime) {
+        textAlpha = map(timeSinceGeneration, fadeStartTime, fadeStartTime + fadeDuration, 255, 0, true);
+      }
+      
+      push();
+      fill(0, textAlpha);
+      textAlign(CENTER, CENTER);
+      textSize(60);
+      textStyle(BOLD);
+      
+      // For egypt (1200) and china (1100), offset higher to avoid overlap with symbols
+      let textX = cx;
+      let textY = cy;
+      
+      if (latestYear === 1200) {
+        // Offset higher for egypt
+        textY = cy - radius * 0.35;
+      } else if (latestYear === 1100) {
+        // Offset even higher for china (innermost ring)
+        textY = cy - radius * 0.45;
+      }
+      
+      text(mode2CurrentCountry, textX, textY);
+      pop();
+    }
+    
+    return; // Skip rest of draw
+  }
+  
   // MODE 0: Video mode
   if (currentMode === 0) {
     background(0);
@@ -228,11 +471,19 @@ function draw() {
   }
   
   // MODE 3: Interactive mode
-  // Ensure audio is initialized
-  if (typeof Gibberish !== 'undefined' && !Gibberish.ctx && typeof userStartAudio === 'function') {
-    userStartAudio().then(() => {
-      if (!Gibberish.ctx) Gibberish.init();
-    }).catch(e => console.log('Audio init:', e));
+  // Stop video and ensure audio is initialized on first frame of Mode 3
+  if (demoVideo && demoVideo.elt && !demoVideo.elt.paused) {
+    demoVideo.pause();
+    console.log('Video paused for interactive mode');
+  }
+  
+  // Initialize Gibberish asynchronously if not already initialized
+  if (typeof Gibberish !== 'undefined' && !Gibberish.ctx) {
+    Gibberish.init().then(() => {
+      console.log('Gibberish initialized in Mode 3');
+    }).catch(e => {
+      console.warn('Gibberish init error:', e);
+    });
   }
   
   if (calibrationMode) {
@@ -572,12 +823,24 @@ function drawQuadrantOverlay() {
   }
 }
 
+// Easing function for smooth animations
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 // Keyboard controls for mode switching
 function keyPressed() {
   if (key === '0') {
     currentMode = 0;
     if (demoVideo) demoVideo.play();
     console.log('Mode 0: Video');
+  } else if (key === '2') {
+    currentMode = 2;
+    mode2StartTime = millis();
+    mode2GeneratedYears = [];
+    mode2LastGenerationTime = millis();
+    if (demoVideo) demoVideo.play();
+    console.log('Mode 2: Evolution');
   } else if (key === '3') {
     currentMode = 3;
     if (demoVideo) demoVideo.pause();
