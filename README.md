@@ -3,8 +3,8 @@ Oracle of Suits is the first interactive project of the [Master in Media Design]
 
 **Latest version:** [Touching Sounds - Interactive Installation](https://egazzarr.github.io/head-md-oracle-of-suits/3.%20touching_sound_project/code/)  
 *Controls: Press `0` for intro video, `3` for interactive mode, `C` for calibration*
-
-Previous demo from 2025-10-28 [here](https://egazzarr.github.io/head-md-oracle-of-suits/concept/2025-10-28/index.html).  
+Allow camera detection. To see whether it is working, press '3' and then 'C' to see your image, and the reflection of your hands on the screen. Place index fingers on different parts of the circe and explore various card symbols thorugh historical eras, generating sounds. 
+Read the [Press-release.pdf](Touching_Sound_press_release.pdf) to explore our project. 
 
 Other experiments while learning:
 
